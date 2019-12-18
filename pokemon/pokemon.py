@@ -34,22 +34,21 @@ def web_connect():
     driver.get("https://pokemon.fandom.com/ko/wiki/%EC%9D%B4%EC%83%81%ED%95%B4%EC%94%A8_(%ED%8F%AC%EC%BC%93%EB%AA%AC)")
     driver.implicitly_wait(300)
 
-# class ThreadClass(QThread):
-#     def __init__(self):
-#         QThread.__init__(self)
-#
-#     def __del__(self):
-#         self.wait()
-#
-#     def run(self):
-#         # logic
+class miningThread(QThread):
+    def __init__(self):
+        QThread.__init__(self)
+
+    def __del__(self):
+        self.wait()
+
+    def run(self):
+        mining()
 
 class pokemon_gui(QWidget) :
 
     def __init__(self):
         super().__init__()
-        # self.progress()
-        # self.threadclass = ThreadClass()
+        self.threadclass = miningThread()
         self.start()
         self.log()
         self.initUI()
@@ -62,7 +61,8 @@ class pokemon_gui(QWidget) :
     def action(self):
         global stop
         stop = True
-        mining()
+        self.threadclass.start()
+        self.progress()
 
         if stop :
             self.startBtn.setText('중지')
@@ -86,15 +86,14 @@ class pokemon_gui(QWidget) :
             "border-radius: 3px"
         )
 
-    # def progress(self):
-    #     self.pbar = QProgressBar(self)
-    #     self.pbar.setRange(0, 100)
-    #     completed = 0.001
-    #     while completed < 100:
-    #         self.pbar.setProperty("value", completed)
-    #         QApplication.processEvents()
-    #         completed += 0.05
-    #     QApplication.processEvents()
+    def progress(self):
+        self.completed = 1
+        while self.completed < 100:
+            self.pbar.setProperty("value", self.completed)
+            QApplication.processEvents()
+            self.completed += 0.5
+            time.sleep(0.5)
+        QApplication.processEvents()
 
     def center(self):
         qr = self.frameGeometry()
@@ -103,16 +102,18 @@ class pokemon_gui(QWidget) :
         self.move(qr.topLeft())
 
     def initUI(self):
+        self.pbar = QProgressBar(self)
+
         grid = QGridLayout()
         grid.addWidget(label, 0, 0)
-        # grid.addWidget(self.pbar, 1, 0)
+        grid.addWidget(self.pbar, 1, 0)
         grid.addWidget(self.startBtn, 2, 0)
         self.setLayout(grid)
 
         self.setWindowTitle('포켓몬 데이터 수집기')
         self.setWindowIcon(QIcon('lizardon.png'))
         self.center()
-        self.resize(480, 360)
+        self.resize(480, 400)
         self.show()
 
 #이미지, 텍스트 저장 폴더 생성
@@ -271,10 +272,15 @@ def mining():
             print(stat_info()[6])
             print("")
             text_save()
-            label.setPlainText(text)
+            label.append(
+                "이름 :" + pokemon_name +'\n'+ "번호 : " + pokemon_num +'\n'+  "타입 : " + pokemon_type +'\n'+ "분류 :"  + pokemon_sort +'\n'+ "특성 : " + pokemon_ability +'\n'+ "숨겨진 특성 : " + pokemon_hidden +'\n'+ "키 :" + pokemon_height +'\n'+ "몸무게 :" + pokemon_weight +'\n'+ \
+                "성비 : 수컷-" + pokemon_mgender + " 암컷-" + pokemon_fgender +'\n'+ "부화 걸음 수 : " + pokemon_birth +'\n'+ "--------종족값--------" +'\n'+ pokemon_hp +'\n'+ pokemon_atk +'\n'+ pokemon_def +'\n'+ pokemon_satk +'\n'+ \
+                pokemon_sdef +'\n'+ pokemon_spd +'\n'+ pokemon_sum +'\n'+'\n'
+            )
             img_save()
             if(name() == ' 거북왕 ') :
                 break
+            QApplication.processEvents()
             time.sleep(3)
             next()
     except:
