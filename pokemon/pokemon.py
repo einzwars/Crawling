@@ -1,29 +1,119 @@
 import logging
 import os
 import re
+import sys
 import traceback
 from urllib.request import urlretrieve
+import time
 
+from PyQt5.QtCore import QThread
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
 
+#GUI
+from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QDesktopWidget, QGridLayout, QProgressBar, QTextBrowser
+
 #오류 추적
 logging.basicConfig(level=logging.ERROR)
 
-#크롬 옵션
-options = webdriver.ChromeOptions()
-options.add_argument('headless')
+def web_connect():
+    global driver
+    #크롬 옵션
+    options = webdriver.ChromeOptions()
+    options.add_argument('headless')
 
-#크롬 드라이버
-# if  getattr(sys, 'frozen', False):
-#     chromedriver_path = os.path.join(sys._MEIPASS, "chromedriver.exe")
-#     driver = webdriver.Chrome('./chromedriver', options=options)
-# else:
-#     driver = webdriver.Chrome('./chromedriver', options=options)
-driver = webdriver.Chrome(ChromeDriverManager().install(), options=options)
-driver.get("https://pokemon.fandom.com/ko/wiki/%EC%9D%B4%EC%83%81%ED%95%B4%EC%94%A8_(%ED%8F%AC%EC%BC%93%EB%AA%AC)")
-driver.implicitly_wait(300)
+    #크롬 드라이버
+    # if  getattr(sys, 'frozen', False):
+    #     chromedriver_path = os.path.join(sys._MEIPASS, "chromedriver.exe")
+    #     driver = webdriver.Chrome('./chromedriver', options=options)
+    # else:
+    #     driver = webdriver.Chrome('./chromedriver', options=options)
+    driver = webdriver.Chrome(ChromeDriverManager().install(), options=options)
+    driver.get("https://pokemon.fandom.com/ko/wiki/%EC%9D%B4%EC%83%81%ED%95%B4%EC%94%A8_(%ED%8F%AC%EC%BC%93%EB%AA%AC)")
+    driver.implicitly_wait(300)
+
+# class ThreadClass(QThread):
+#     def __init__(self):
+#         QThread.__init__(self)
+#
+#     def __del__(self):
+#         self.wait()
+#
+#     def run(self):
+#         # logic
+
+class pokemon_gui(QWidget) :
+
+    def __init__(self):
+        super().__init__()
+        # self.progress()
+        # self.threadclass = ThreadClass()
+        self.start()
+        self.log()
+        self.initUI()
+
+    def start(self):
+        self.startBtn = QPushButton('시작', self)
+        self.startBtn.resize(self.startBtn.sizeHint())
+        self.startBtn.clicked.connect(self.action)
+
+    def action(self):
+        global stop
+        stop = True
+        mining()
+
+        if stop :
+            self.startBtn.setText('중지')
+            self.startBtn.clicked.connect(self.stopAction)
+        else:
+            self.startBtn.setText('실행')
+            self.startBtn.clicked.connect(self.startAction)
+
+    def startAction(self):
+        stop = True
+
+    def stopAction(self):
+        stop = False
+
+    def log(self):
+        global label
+        label = QTextBrowser()
+        label.setStyleSheet(
+            "border-style: solid;"
+            "border-width: 2px;"
+            "border-radius: 3px"
+        )
+
+    # def progress(self):
+    #     self.pbar = QProgressBar(self)
+    #     self.pbar.setRange(0, 100)
+    #     completed = 0.001
+    #     while completed < 100:
+    #         self.pbar.setProperty("value", completed)
+    #         QApplication.processEvents()
+    #         completed += 0.05
+    #     QApplication.processEvents()
+
+    def center(self):
+        qr = self.frameGeometry()
+        cp = QDesktopWidget().availableGeometry().center()
+        qr.moveCenter(cp)
+        self.move(qr.topLeft())
+
+    def initUI(self):
+        grid = QGridLayout()
+        grid.addWidget(label, 0, 0)
+        # grid.addWidget(self.pbar, 1, 0)
+        grid.addWidget(self.startBtn, 2, 0)
+        self.setLayout(grid)
+
+        self.setWindowTitle('포켓몬 데이터 수집기')
+        self.setWindowIcon(QIcon('lizardon.png'))
+        self.center()
+        self.resize(480, 360)
+        self.show()
 
 #이미지, 텍스트 저장 폴더 생성
 try:
@@ -35,7 +125,7 @@ except OSError as e:
         exit()
 
 
-def mining():
+def mine():
     global stat, stat2, stat3, data, table, table2, table3, soup
 
     html = driver.page_source
@@ -100,7 +190,7 @@ def type():
 
 def sort():
     global pokemon_sort
-    pokemon_sort = re.sub('\n', '', data.find(text = re.compile("[ㄱ-힉]포켓몬")))
+    pokemon_sort = re.sub('\n', '', data.find(text = re.compile("[ㄱ-힝]포켓몬")))
     return pokemon_sort
 
 def ability():
@@ -156,11 +246,11 @@ def next():
     btn = driver.find_element_by_link_text('→')
     btn.click()
 
-
-def main():
+def mining():
     try:
-        while True :
-            mining()
+        web_connect()
+        while stop :
+            mine()
             print("이름 :"+name())
             print("번호 : "+num())
             print("타입 : "+type())
@@ -181,14 +271,26 @@ def main():
             print(stat_info()[6])
             print("")
             text_save()
+            label.setPlainText(text)
             img_save()
             if(name() == ' 거북왕 ') :
                 break
+            time.sleep(3)
             next()
+    except:
+        logging.error(traceback.format_exc())
+
+def main():
+    try:
+        app = QApplication(sys.argv)
+        p = pokemon_gui()
+
     except Exception as e:
         logging.error(traceback.format_exc())
         # os.system("pause")
+
     finally:
+        sys.exit(app.exec_())
         driver.close()
 
 if __name__ == "__main__":
