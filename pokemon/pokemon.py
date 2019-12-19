@@ -6,7 +6,7 @@ import traceback
 from urllib.request import urlretrieve
 import time
 
-from PyQt5.QtCore import QThread
+from PyQt5.QtCore import QThread, pyqtSignal
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
@@ -34,9 +34,16 @@ def web_connect():
     driver.get("https://pokemon.fandom.com/ko/wiki/%EC%9D%B4%EC%83%81%ED%95%B4%EC%94%A8_(%ED%8F%AC%EC%BC%93%EB%AA%AC)")
     driver.implicitly_wait(300)
 
-class miningThread(QThread):
+class parentThread(QThread):
+    """Super Class"""
+    stop = True
+
     def __init__(self):
         QThread.__init__(self)
+
+class miningThread(parentThread):
+    def __init__(self):
+        super().__init__()
 
     def __del__(self):
         self.wait()
@@ -44,38 +51,62 @@ class miningThread(QThread):
     def run(self):
         mining()
 
-class pokemon_gui(QWidget) :
-
+class stopThread(parentThread):
     def __init__(self):
         super().__init__()
-        self.threadclass = miningThread()
+
+    def __del__(self):
+        self.wait()
+
+    def stopAction(self):
+        super().stop = False
+        print("stopThread:", parentThread.stop)
+
+    def run(self):
+        if parentThread.stop == True :
+            startBtn.setText('중지')
+            startBtn.clicked.connect(self.stopAction)
+
+class progressThread(parentThread):
+    completeChange = pyqtSignal(float)
+
+    def run(self):
+        self.completed = 0.01
+        while self.completed < 100:
+            self.completed += 0.05
+            time.sleep(0.5)
+            if not parentThread.stop:
+                print("porgressThread:", parentThread.stop)
+                self.completed = 100
+            self.completeChange.emit(self.completed)
+
+class pokemon_gui(QWidget) :
+    def __init__(self):
+        super().__init__()
+        self.miningthread = miningThread()
+        self.stopthread = stopThread()
         self.start()
         self.log()
         self.initUI()
 
     def start(self):
-        self.startBtn = QPushButton('시작', self)
-        self.startBtn.resize(self.startBtn.sizeHint())
-        self.startBtn.clicked.connect(self.action)
+        global startBtn
+        startBtn = QPushButton('시작', self)
+        startBtn.resize(startBtn.sizeHint())
+        startBtn.clicked.connect(self.action)
 
     def action(self):
-        global stop
-        stop = True
-        self.threadclass.start()
-        self.progress()
+        self.progressAction()
+        self.miningthread.start()
+        self.stopthread.start()
 
-        if stop :
-            self.startBtn.setText('중지')
-            self.startBtn.clicked.connect(self.stopAction)
-        else:
-            self.startBtn.setText('실행')
-            self.startBtn.clicked.connect(self.startAction)
+    def progressAction(self):
+        self.pg = progressThread()
+        self.pg.completeChange.connect(self.onCompleteChange)
+        self.pg.start()
 
-    def startAction(self):
-        stop = True
-
-    def stopAction(self):
-        stop = False
+    def onCompleteChange(self, value):
+        self.pbar.setProperty("value", value)
 
     def log(self):
         global label
@@ -85,15 +116,6 @@ class pokemon_gui(QWidget) :
             "border-width: 2px;"
             "border-radius: 3px"
         )
-
-    def progress(self):
-        self.completed = 1
-        while self.completed < 100:
-            self.pbar.setProperty("value", self.completed)
-            QApplication.processEvents()
-            self.completed += 0.5
-            time.sleep(0.5)
-        QApplication.processEvents()
 
     def center(self):
         qr = self.frameGeometry()
@@ -107,7 +129,7 @@ class pokemon_gui(QWidget) :
         grid = QGridLayout()
         grid.addWidget(label, 0, 0)
         grid.addWidget(self.pbar, 1, 0)
-        grid.addWidget(self.startBtn, 2, 0)
+        grid.addWidget(startBtn, 2, 0)
         self.setLayout(grid)
 
         self.setWindowTitle('포켓몬 데이터 수집기')
@@ -250,7 +272,7 @@ def next():
 def mining():
     try:
         web_connect()
-        while stop :
+        while parentThread.stop :
             mine()
             print("이름 :"+name())
             print("번호 : "+num())
@@ -272,13 +294,11 @@ def mining():
             print(stat_info()[6])
             print("")
             text_save()
-            label.append(
-                "이름 :" + pokemon_name +'\n'+ "번호 : " + pokemon_num +'\n'+  "타입 : " + pokemon_type +'\n'+ "분류 :"  + pokemon_sort +'\n'+ "특성 : " + pokemon_ability +'\n'+ "숨겨진 특성 : " + pokemon_hidden +'\n'+ "키 :" + pokemon_height +'\n'+ "몸무게 :" + pokemon_weight +'\n'+ \
-                "성비 : 수컷-" + pokemon_mgender + " 암컷-" + pokemon_fgender +'\n'+ "부화 걸음 수 : " + pokemon_birth +'\n'+ "--------종족값--------" +'\n'+ pokemon_hp +'\n'+ pokemon_atk +'\n'+ pokemon_def +'\n'+ pokemon_satk +'\n'+ \
-                pokemon_sdef +'\n'+ pokemon_spd +'\n'+ pokemon_sum +'\n'+'\n'
-            )
+            label.setPlainText(text)
             img_save()
             if(name() == ' 거북왕 ') :
+                parentThread.stop = False
+                print("mineThread:", parentThread.stop)
                 break
             QApplication.processEvents()
             time.sleep(3)
