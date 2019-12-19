@@ -59,8 +59,11 @@ class stopThread(parentThread):
         self.wait()
 
     def stopAction(self):
-        super().stop = False
-        print("stopThread:", parentThread.stop)
+        try:
+            parentThread.stop = False
+            print("stopThread:", parentThread.stop)
+        except:
+            logging.error(traceback.format_exc())
 
     def run(self):
         if parentThread.stop == True :
@@ -294,7 +297,11 @@ def mining():
             print(stat_info()[6])
             print("")
             text_save()
-            label.setPlainText(text)
+            label.append(
+                "이름 :" + pokemon_name +'\n'+ "번호 : " + pokemon_num +'\n'+  "타입 : " + pokemon_type +'\n'+ "분류 :"  + pokemon_sort +'\n'+ "특성 : " + pokemon_ability +'\n'+ "숨겨진 특성 : " + pokemon_hidden +'\n'+ "키 :" + pokemon_height +'\n'+ "몸무게 :" + pokemon_weight +'\n'+ \
+                "성비 : 수컷-" + pokemon_mgender + " 암컷-" + pokemon_fgender +'\n'+ "부화 걸음 수 : " + pokemon_birth +'\n'+ "--------종족값--------" +'\n'+ pokemon_hp +'\n'+ pokemon_atk +'\n'+ pokemon_def +'\n'+ pokemon_satk +'\n'+ \
+                pokemon_sdef +'\n'+ pokemon_spd +'\n'+ pokemon_sum +'\n'+'\n'
+            )
             img_save()
             if(name() == ' 거북왕 ') :
                 parentThread.stop = False
