@@ -65,6 +65,10 @@ class stopThread(parentThread):
         except:
             logging.error(traceback.format_exc())
 
+    def appQuit(self):
+        app.quit()
+        driver.close()
+
     def run(self):
         if parentThread.stop == True :
             startBtn.setText('중지')
@@ -76,7 +80,7 @@ class progressThread(parentThread):
     def run(self):
         self.completed = 0.01
         while self.completed < 100:
-            self.completed += 0.05
+            self.completed += 0.005
             time.sleep(0.5)
             if not parentThread.stop:
                 print("porgressThread:", parentThread.stop)
@@ -303,18 +307,19 @@ def mining():
                 pokemon_sdef +'\n'+ pokemon_spd +'\n'+ pokemon_sum +'\n'+'\n'
             )
             img_save()
-            if(name() == ' 거북왕 ') :
+            if(name() == ' 무한다이노 ') :
                 parentThread.stop = False
                 print("mineThread:", parentThread.stop)
                 break
             QApplication.processEvents()
-            time.sleep(3)
             next()
+            time.sleep(3)
     except:
         logging.error(traceback.format_exc())
 
 def main():
     try:
+        global app
         app = QApplication(sys.argv)
         p = pokemon_gui()
 
