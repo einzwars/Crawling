@@ -6,6 +6,7 @@ import traceback
 from urllib.request import urlretrieve
 import time
 import openpyxl
+from openpyxl.worksheet.table import Table, TableStyleInfo
 
 from PyQt5.QtCore import QThread, pyqtSignal
 from bs4 import BeautifulSoup
@@ -255,7 +256,7 @@ def birth():
     pokemon_birth = re.sub('\n', '', data.find(text = re.compile("[0-9]걸음")))
     return pokemon_birth
 
-# #TXT 파일로 저장
+# #txt 파일로 저장
 # text = ''
 # def text_save():
 #     global text
@@ -266,19 +267,32 @@ def birth():
 #     open_output_text.write(text)
 #     open_output_text.close()
 
-#Excel 파일로 저장
+#xlsx 파일로 저장
 wb = openpyxl.Workbook()
 sheet = wb.active
 sheet.title = '포켓몬 데이터'
 sheet.append(['이름', '번호', '타입', '분류', '특성', '숨겨진 특성', '키', '몸무게', '수컷 비율', '암컷 비율', '부화 걸음 수', 'HP', '공격', '방어', '특수공격', '특수방어', '스피드', '총합'])
+sheet.column_dimensions['D'].width = 15
+sheet.column_dimensions['E'].width = 15
+sheet.column_dimensions['F'].width = 15
 wb.save('./pokemon/포켓몬 데이터.xlsx')
 wb.close()
 def excel_save():
     pkw = openpyxl.load_workbook('./pokemon/포켓몬 데이터.xlsx')
     psheet = pkw.active
-    psheet.append([pokemon_name, pokemon_num, pokemon_type, pokemon_sort, pokemon_ability, pokemon_hidden, pokemon_height, pokemon_weight,
-                   pokemon_mgender, pokemon_fgender, pokemon_birth, pokemon_hp, pokemon_atk, pokemon_def, pokemon_satk, pokemon_sdef, pokemon_spd, pokemon_sum])
+    psheet.append([pokemon_name, pokemon_num, pokemon_type, pokemon_sort, pokemon_ability, pokemon_hidden, pokemon_height, pokemon_weight, pokemon_mgender, pokemon_fgender, pokemon_birth,
+                   int(re.sub('[A-Z]*: ', '', pokemon_hp)), int(re.sub('[ㄱ-힝]*: ', '', pokemon_atk)), int(re.sub('[ㄱ-힝]*: ', '', pokemon_def)), int(re.sub('[ㄱ-힝]*: ', '', pokemon_satk)),
+                   int(re.sub('[ㄱ-힝]*: ', '', pokemon_sdef)), int(re.sub('[ㄱ-힝]*: ', '', pokemon_spd)), int(re.sub('[ㄱ-힝]*: ', '', pokemon_sum))])
     pkw.save('./pokemon/포켓몬 데이터.xlsx')
+
+def excel_table():
+    tw = openpyxl.load_workbook('./pokemon/포켓몬 데이터.xlsx')
+    tsheet = tw['포켓몬 데이터']
+    tab = Table(displayName = "pokemon", ref="A1:R10")
+
+    tab.tableStyleInfo = TableStyleInfo(name="TableStyleMedium2", showFirstColumn=False, showLastColumn=False, showRowStripes=True, showColumnStripes=True)
+    tsheet.add_table(tab)
+    tw.save('./pokemon/포켓몬 데이터.xlsx')
 
 #포켓몬 이미지 저장
 def img_save():
@@ -290,6 +304,7 @@ def img_save():
 def next():
     btn = driver.find_element_by_link_text('→')
     btn.click()
+
 
 def mining():
     try:
@@ -330,6 +345,8 @@ def mining():
             QApplication.processEvents()
             next()
             time.sleep(3)
+        excel_table()
+        print("table create success")
     except:
         logging.error(traceback.format_exc())
 
