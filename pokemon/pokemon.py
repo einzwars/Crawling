@@ -5,6 +5,7 @@ import sys
 import traceback
 from urllib.request import urlretrieve
 import time
+import openpyxl
 
 from PyQt5.QtCore import QThread, pyqtSignal
 from bs4 import BeautifulSoup
@@ -81,7 +82,7 @@ class progressThread(parentThread):
         self.completed = 0.01
         while self.completed < 100:
             self.completed += 0.005
-            time.sleep(0.5)
+            time.sleep(0.2)
             if not parentThread.stop:
                 print("porgressThread:", parentThread.stop)
                 self.completed = 100
@@ -254,16 +255,30 @@ def birth():
     pokemon_birth = re.sub('\n', '', data.find(text = re.compile("[0-9]걸음")))
     return pokemon_birth
 
-#txt 저장
-text = ''
-def text_save():
-    global text
-    text = text + "이름 :" + pokemon_name +'\n'+ "번호 : " + pokemon_num +'\n'+  "타입 : " + pokemon_type +'\n'+ "분류 :"  + pokemon_sort +'\n'+ "특성 : " + pokemon_ability +'\n'+ "숨겨진 특성 : " + pokemon_hidden +'\n'+ "키 :" + pokemon_height +'\n'+ "몸무게 :" + pokemon_weight +'\n'+ \
-           "성비 : 수컷-" + pokemon_mgender + " 암컷-" + pokemon_fgender +'\n'+ "부화 걸음 수 : " + pokemon_birth +'\n'+ "--------종족값--------" +'\n'+ pokemon_hp +'\n'+ pokemon_atk +'\n'+ pokemon_def +'\n'+ pokemon_satk +'\n'+ \
-           pokemon_sdef +'\n'+ pokemon_spd +'\n'+ pokemon_sum +'\n'+'\n'
-    open_output_text = open('./pokemon/pokemon.txt', 'w', encoding='utf-8')
-    open_output_text.write(text)
-    open_output_text.close()
+# #TXT 파일로 저장
+# text = ''
+# def text_save():
+#     global text
+#     text = text + "이름 :" + pokemon_name +'\n'+ "번호 : " + pokemon_num +'\n'+  "타입 : " + pokemon_type +'\n'+ "분류 :"  + pokemon_sort +'\n'+ "특성 : " + pokemon_ability +'\n'+ "숨겨진 특성 : " + pokemon_hidden +'\n'+ "키 :" + pokemon_height +'\n'+ "몸무게 :" + pokemon_weight +'\n'+ \
+#            "성비 : 수컷-" + pokemon_mgender + " 암컷-" + pokemon_fgender +'\n'+ "부화 걸음 수 : " + pokemon_birth +'\n'+ "--------종족값--------" +'\n'+ pokemon_hp +'\n'+ pokemon_atk +'\n'+ pokemon_def +'\n'+ pokemon_satk +'\n'+ \
+#            pokemon_sdef +'\n'+ pokemon_spd +'\n'+ pokemon_sum +'\n'+'\n'
+#     open_output_text = open('./pokemon/pokemon.txt', 'w', encoding='utf-8')
+#     open_output_text.write(text)
+#     open_output_text.close()
+
+#Excel 파일로 저장
+wb = openpyxl.Workbook()
+sheet = wb.active
+sheet.title = '포켓몬 데이터'
+sheet.append(['이름', '번호', '타입', '분류', '특성', '숨겨진 특성', '키', '몸무게', '수컷 비율', '암컷 비율', '부화 걸음 수', 'HP', '공격', '방어', '특수공격', '특수방어', '스피드', '총합'])
+wb.save('./pokemon/포켓몬 데이터.xlsx')
+wb.close()
+def excel_save():
+    pkw = openpyxl.load_workbook('./pokemon/포켓몬 데이터.xlsx')
+    psheet = pkw.active
+    psheet.append([pokemon_name, pokemon_num, pokemon_type, pokemon_sort, pokemon_ability, pokemon_hidden, pokemon_height, pokemon_weight,
+                   pokemon_mgender, pokemon_fgender, pokemon_birth, pokemon_hp, pokemon_atk, pokemon_def, pokemon_satk, pokemon_sdef, pokemon_spd, pokemon_sum])
+    pkw.save('./pokemon/포켓몬 데이터.xlsx')
 
 #포켓몬 이미지 저장
 def img_save():
@@ -300,7 +315,8 @@ def mining():
             print(stat_info()[5])
             print(stat_info()[6])
             print("")
-            text_save()
+            # text_save()
+            excel_save()
             label.append(
                 "이름 :" + pokemon_name +'\n'+ "번호 : " + pokemon_num +'\n'+  "타입 : " + pokemon_type +'\n'+ "분류 :"  + pokemon_sort +'\n'+ "특성 : " + pokemon_ability +'\n'+ "숨겨진 특성 : " + pokemon_hidden +'\n'+ "키 :" + pokemon_height +'\n'+ "몸무게 :" + pokemon_weight +'\n'+ \
                 "성비 : 수컷-" + pokemon_mgender + " 암컷-" + pokemon_fgender +'\n'+ "부화 걸음 수 : " + pokemon_birth +'\n'+ "--------종족값--------" +'\n'+ pokemon_hp +'\n'+ pokemon_atk +'\n'+ pokemon_def +'\n'+ pokemon_satk +'\n'+ \
